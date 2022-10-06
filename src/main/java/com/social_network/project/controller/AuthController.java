@@ -1,7 +1,7 @@
 package com.social_network.project.controller;
 
 import com.social_network.project.payload.request.LoginRequest;
-import com.social_network.project.payload.request.SignUpRequest;
+import com.social_network.project.payload.request.SignupRequest;
 import com.social_network.project.payload.response.JWTTokenSuccessResponse;
 import com.social_network.project.payload.response.MessageResponse;
 import com.social_network.project.security.JWTTokenProvider;
@@ -29,43 +29,33 @@ public class AuthController {
 
     @Autowired
     private JWTTokenProvider jwtTokenProvider;
-
     @Autowired
     private AuthenticationManager authenticationManager;
-
     @Autowired
     private ResponseErrorValidation responseErrorValidation;
-
     @Autowired
     private UserService userService;
 
     @PostMapping("/signin")
-    public ResponseEntity<Object> authenticateUser(@Valid @RequestBody LoginRequest loginRequest, BindingResult bindingResult) {
+    public ResponseEntity<Object> authenticateUser(@Valid @RequestBody LoginRequest loginRequest,
+                                                   BindingResult bindingResult) {
         ResponseEntity<Object> errors = responseErrorValidation.mapValidationService(bindingResult);
-        if (!ObjectUtils.isEmpty(errors)) {
-            return errors;
-        }
+        if (!ObjectUtils.isEmpty(errors)) return errors;
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 loginRequest.getUsername(),
                 loginRequest.getPassword()
         ));
-
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = SecurityConstants.TOKEN_PREFIX + jwtTokenProvider.generateToken(authentication);
-
         return ResponseEntity.ok(new JWTTokenSuccessResponse(true, jwt));
     }
 
-    @PostMapping("/signup")
-    public ResponseEntity<Object> registerUser(@Valid @RequestBody SignUpRequest signUpRequest, BindingResult bindingResult) {
+    @RequestMapping(value = "/signup", method = { RequestMethod.GET, RequestMethod.POST })
+    public ResponseEntity<Object> registerUser(@Valid @RequestBody SignupRequest signupRequest,
+                                               BindingResult bindingResult) {
         ResponseEntity<Object> errors = responseErrorValidation.mapValidationService(bindingResult);
-        if (!ObjectUtils.isEmpty(errors)) {
-            return errors;
-        }
-
-        userService.createUser(signUpRequest);
-
-        return ResponseEntity.ok(new MessageResponse("User registered successfully"));
+        if (!ObjectUtils.isEmpty(errors)) return errors;
+        userService.createUser(signupRequest);
+        return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }
-
 }

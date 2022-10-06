@@ -20,6 +20,7 @@ import java.util.Optional;
 
 @Service
 public class PostService {
+
     public static final Logger LOG = LoggerFactory.getLogger(PostService.class);
 
     private final PostRepository postRepository;
@@ -41,9 +42,7 @@ public class PostService {
         post.setLocation(postDTO.getLocation());
         post.setTitle(postDTO.getTitle());
         post.setLikes(0);
-
-        LOG.info("Saving post for User {}", user.getEmail());
-
+        LOG.info("Saving Post for User: {}", user.getEmail());
         return postRepository.save(post);
     }
 
@@ -51,27 +50,24 @@ public class PostService {
         return postRepository.findAllByOrderByCreatedDateDesc();
     }
 
-    public Post getPostById(Long id, Principal principal) {
+    public Post getPostById(Long postId, Principal principal) {
         User user = getUserByPrincipal(principal);
-
-        return postRepository.findPostByIdAndUser(id, user)
-                .orElseThrow(() -> new PostNotFoundException("Post cannot be found for username : " + user.getEmail()));
+        return postRepository.findPostByIdAndUser(postId, user)
+                .orElseThrow(() -> new PostNotFoundException("Post cannot found for username: " + user.getEmail()));
     }
 
     public List<Post> getAllPostForUser(Principal principal) {
         User user = getUserByPrincipal(principal);
-
         return postRepository.findAllByUserOrderByCreatedDateDesc(user);
     }
 
-    public Post likePost(Long id, String username) {
-        Post post = postRepository.findById(id)
+    public Post likePost(Long postId, String username) {
+        Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new PostNotFoundException("Post cannot be found"));
-
         Optional<String> userLiked = post.getLikedUsers()
                 .stream()
-                .filter(u -> u.equals(username)).findAny();
-
+                .filter(u -> u.equals(username))
+                .findAny();
         if (userLiked.isPresent()) {
             post.setLikes(post.getLikes() - 1);
             post.getLikedUsers().remove(username);
@@ -79,20 +75,19 @@ public class PostService {
             post.setLikes(post.getLikes() + 1);
             post.getLikedUsers().add(username);
         }
-
         return postRepository.save(post);
     }
 
-    public void deletePost(Long id, Principal principal) {
-        Post post = getPostById(id, principal);
-        Optional<ImageModel> imageModel = imageRepository.findByPostId(id);
+    public void deletePost(Long postId, Principal principal) {
+        Post post = getPostById(postId, principal);
+        Optional<ImageModel> imageModel = imageRepository.findByPostId(post.getId());
         postRepository.delete(post);
         imageModel.ifPresent(imageRepository::delete);
     }
 
     private User getUserByPrincipal(Principal principal) {
         String username = principal.getName();
-        return userRepository.findUserByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username " + username));
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Username not found with username " + username));
     }
 }

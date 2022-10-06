@@ -39,60 +39,50 @@ public class ImageUploadService {
         this.postRepository = postRepository;
     }
 
-    private ImageModel uploadImageToUser(MultipartFile file, Principal principal) throws IOException {
+    public ImageModel uploadImageToUser(MultipartFile file, Principal principal) throws IOException {
         User user = getUserByPrincipal(principal);
-        LOG.info("Uploading image profile to User {} ", user.getUsername());
-
+        LOG.info("Uploading image profile to User {}", user.getUsername());
         ImageModel userProfileImage = imageRepository.findByUserId(user.getId()).orElse(null);
-
-        if(!ObjectUtils.isEmpty(userProfileImage)) {
+        if (!ObjectUtils.isEmpty(userProfileImage)) {
             imageRepository.delete(userProfileImage);
         }
-
         ImageModel imageModel = new ImageModel();
         imageModel.setUserId(user.getId());
         imageModel.setImageBytes(compressBytes(file.getBytes()));
         imageModel.setName(file.getOriginalFilename());
-
         return imageRepository.save(imageModel);
     }
 
-    public ImageModel uploadImageToPost(MultipartFile file, Principal principal, Long id) throws IOException {
+    public ImageModel uploadImageToPost(MultipartFile file, Principal principal, Long postId) throws IOException {
         User user = getUserByPrincipal(principal);
         Post post = user.getPosts()
                 .stream()
-                .filter(p -> p.getId().equals(id))
+                .filter(p -> p.getId().equals(postId))
                 .collect(toSinglePostCollector());
-
         ImageModel imageModel = new ImageModel();
         imageModel.setPostId(post.getId());
         imageModel.setImageBytes(file.getBytes());
         imageModel.setImageBytes(compressBytes(file.getBytes()));
         imageModel.setName(file.getOriginalFilename());
-        LOG.info("Uploading image to Post {} ", post.getId());
-
+        LOG.info("Uploading image to Post {}", post.getId());
         return imageRepository.save(imageModel);
     }
 
     public ImageModel getImageToUser(Principal principal) {
         User user = getUserByPrincipal(principal);
-
         ImageModel imageModel = imageRepository.findByUserId(user.getId()).orElse(null);
-        if(!ObjectUtils.isEmpty(imageModel)) {
+        if (!ObjectUtils.isEmpty(imageModel)) {
             imageModel.setImageBytes(decompressBytes(imageModel.getImageBytes()));
         }
-
         return imageModel;
     }
-    
-    public ImageModel getImageToPost(Long id) {
-        ImageModel imageModel = imageRepository.findByPostId(id)
-                .orElseThrow(() -> new ImageNotFoundException("Cannot find image to Post: " + id));
 
-        if(!ObjectUtils.isEmpty(imageModel)) {
+    public ImageModel getImageToPost(Long postId) {
+        ImageModel imageModel = imageRepository.findByPostId(postId)
+                .orElseThrow(() -> new ImageNotFoundException("Cannot find image to Post: " + postId));
+        if (!ObjectUtils.isEmpty(imageModel)) {
             imageModel.setImageBytes(decompressBytes(imageModel.getImageBytes()));
         }
-
         return imageModel;
     }
 
@@ -106,14 +96,12 @@ public class ImageUploadService {
             int count = deflater.deflate(buffer);
             outputStream.write(buffer, 0, count);
         }
-
         try {
             outputStream.close();
         } catch (IOException e) {
             LOG.error("Cannot compress Bytes");
         }
-        System.out.println("Compressed Image bytes Size - " + outputStream.toByteArray().length);
-
+        System.out.println("Compressed Image Byte Size - " + outputStream.toByteArray().length);
         return outputStream.toByteArray();
     }
 
@@ -131,14 +119,13 @@ public class ImageUploadService {
         } catch (IOException | DataFormatException e) {
             LOG.error("Cannot decompress Bytes");
         }
-
         return outputStream.toByteArray();
     }
 
     private User getUserByPrincipal(Principal principal) {
         String username = principal.getName();
-        return userRepository.findUserByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username " + username));
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Username not found with username " + username));
     }
 
     private <T> Collector<T, ?, T> toSinglePostCollector() {
@@ -148,7 +135,6 @@ public class ImageUploadService {
                     if (list.size() != 1) {
                         throw new IllegalStateException();
                     }
-
                     return list.get(0);
                 }
         );

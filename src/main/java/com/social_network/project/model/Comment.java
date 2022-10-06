@@ -8,7 +8,6 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 public class Comment {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

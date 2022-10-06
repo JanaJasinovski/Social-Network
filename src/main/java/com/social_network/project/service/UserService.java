@@ -4,7 +4,7 @@ import com.social_network.project.dto.UserDTO;
 import com.social_network.project.enums.ERole;
 import com.social_network.project.exception.UserExistException;
 import com.social_network.project.model.User;
-import com.social_network.project.payload.request.SignUpRequest;
+import com.social_network.project.payload.request.SignupRequest;
 import com.social_network.project.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +17,7 @@ import java.security.Principal;
 
 @Service
 public class UserService {
+
     public static final Logger LOG = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
@@ -28,20 +29,19 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public User createUser(SignUpRequest request) {
+    public User createUser(SignupRequest userIn) {
         User user = new User();
-        user.setEmail(request.getEmail());
-        user.setName(request.getFirstname());
-        user.setLastname(request.getLastname());
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setEmail(userIn.getEmail());
+        user.setName(userIn.getFirstname());
+        user.setLastname(userIn.getLastname());
+        user.setUsername(userIn.getUsername());
+        user.setPassword(passwordEncoder.encode(userIn.getPassword()));
         user.getRoles().add(ERole.ROLE_USER);
-
-        try {
-            LOG.info("Saving User {} ", request.getEmail());
+        try{
+            LOG.info("Saving User {}", userIn.getEmail());
             return userRepository.save(user);
         } catch (Exception e) {
-            LOG.error("Error during registration {} " + e.getMessage());
+            LOG.error("Error during registration. {}", e.getMessage());
             throw new UserExistException("The user " + user.getUsername() + " already exist. Please check credentials");
         }
     }
@@ -51,7 +51,6 @@ public class UserService {
         user.setName(userDTO.getFirstname());
         user.setLastname(userDTO.getLastname());
         user.setBio(userDTO.getBio());
-
         return userRepository.save(user);
     }
 
@@ -61,7 +60,11 @@ public class UserService {
 
     private User getUserByPrincipal(Principal principal) {
         String username = principal.getName();
-        return userRepository.findUserByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username " + username));
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Username not found with username " + username));
+    }
+
+    public User getUserById(Long id) {
+        return userRepository.findById(id).orElseThrow(()-> new UsernameNotFoundException("User not found"));
     }
 }

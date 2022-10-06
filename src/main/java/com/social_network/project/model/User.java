@@ -10,8 +10,8 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
-@Data
 @Entity
+@Data
 public class User implements UserDetails {
 
     @Id
@@ -64,6 +64,10 @@ public class User implements UserDetails {
     protected void onCreate() {
         this.createdDate = LocalDateTime.now();
     }
+
+    /**
+     * SECURITY
+     */
 
     @Override
     public String getPassword() {
